@@ -1,7 +1,3 @@
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
 set(PROJECT_SOURCES
     main.cpp
     decoder.cpp
@@ -12,7 +8,7 @@ set(PROJECT_SOURCES
 )
 
 
-if(EMSCRIPTEN)
+if(EMSCRIPTEN OR ANDROID)
     alp_add_git_repository(qml_catch2_console URL https://github.com/AlpineMapsOrg/qml_catch2_console.git COMMITISH origin/main DO_NOT_ADD_SUBPROJECT)
 
     find_package(Qt6 REQUIRED COMPONENTS Core Gui)
@@ -21,13 +17,17 @@ if(EMSCRIPTEN)
     include(${qml_catch2_console_SOURCE_DIR}/src/qml_catch2_console.cmake)
 
     add_qml_catch2_console_unittests(${PROJECT_NAME} ${PROJECT_SOURCES})
-    set(INSTALL_FILES
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.js"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.html"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/qtloader.js"
-    )
-    install(FILES ${INSTALL_FILES} DESTINATION ${AA_WWW_INSTALL_DIR})
+    if(EMSCRIPTEN)
+        set(INSTALL_FILES
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.js"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.wasm"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.html"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/qtloader.js"
+        )
+        install(FILES ${INSTALL_FILES} DESTINATION ${AA_WWW_INSTALL_DIR})
+        target_compile_options(${PROJECT_NAME} PUBLIC -msimd128 -msse2)
+        set_target_properties(${PROJECT_NAME} PROPERTIES QT_WASM_INITIAL_MEMORY "200MB")
+    endif()
 
     qt_add_resources(${PROJECT_NAME} "test-data"
         BASE ".."
@@ -127,12 +127,6 @@ if(EMSCRIPTEN)
             # ../test-data/basis/etc1/roblox06_unpacked_rgb_ETC1_RGB_0000.png
         )
     endif()
-
-    # build standalone (no js code)
-    # set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    target_compile_options(${PROJECT_NAME} PUBLIC -msimd128 -msse2)
-    set_target_properties(${PROJECT_NAME} PROPERTIES QT_WASM_INITIAL_MEMORY "200MB")
-    # target_link_options(${PROJECT_NAME} PUBLIC -s TOTAL_MEMORY=209715200)
 else()
     add_executable(${PROJECT_NAME} ${PROJECT_SOURCES})
 endif()

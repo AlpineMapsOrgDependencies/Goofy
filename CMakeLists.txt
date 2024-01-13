@@ -10,5 +10,10 @@ endif()
 
 include(cmake/alp_add_git_repository.cmake)
 
+if(EMSCRIPTEN OR ANDROID)
+    find_package(Qt6 REQUIRED COMPONENTS Core Gui)
+    qt_standard_project_setup()
+endif()
+
 add_subdirectory(Src)
 

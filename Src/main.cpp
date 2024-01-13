@@ -5,7 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
 #include <QImage>
 #include <catch2/catch_test_macros.hpp>
 #endif
@@ -14,7 +14,6 @@
 #define __cdecl
 #define __stdcall
 #define __fastcall
-//and others
 #endif
 
 #define GOOFYTC_IMPLEMENTATION
@@ -153,7 +152,7 @@ struct TgaHeader
 
 void saveDds(const char* fileName, const unsigned char* data, size_t dataSize, uint32_t width, uint32_t height, uint32_t ddsFourCC)
 {
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     DdsHeader header;
     memset(&header, 0, sizeof(DdsHeader));
     header.magic = 0x20534444;
@@ -184,7 +183,7 @@ void saveDds(const char* fileName, const unsigned char* data, size_t dataSize, u
 
 void saveKtx(const char* fileName, const unsigned char* data, size_t dataSize, uint32_t width, uint32_t height, uint32_t ktxFormat)
 {
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     KtxHeader header;
     memset(&header, 0, sizeof(KtxHeader));
     memcpy(&header.identifier[0], &kKtxIdentifier[0], 12);
@@ -221,7 +220,7 @@ void saveKtx(const char* fileName, const unsigned char* data, size_t dataSize, u
 
 void saveTga(const char* fileName, const unsigned char* data, uint32_t width, uint32_t height)
 {
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     TgaHeader header;
     memset(&header, 0, sizeof(TgaHeader));
     header.imageType = 2;
@@ -266,7 +265,7 @@ unsigned char* loadPngAsRgba8(const char* fileName, unsigned int* pWidth, unsign
     std::vector<unsigned char> image;
     unsigned int width, height;
 
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     unsigned int error = lodepng::decode(image, width, height, fileName);
 
     if (error) {
@@ -310,7 +309,11 @@ unsigned char* loadPngAsRgba8(const char* fileName, unsigned int* pWidth, unsign
 #ifdef _WIN32
     unsigned char* rgbaBuffer = (unsigned char*) _aligned_malloc(sizeInBytes, 64);
 #else
+#ifndef __ANDROID__
     unsigned char* rgbaBuffer = (unsigned char*) aligned_alloc(64, sizeInBytes);
+#else
+    unsigned char *rgbaBuffer = (unsigned char *) malloc(sizeInBytes);
+#endif
 #endif
 
     int bytesPerPixel = ((int) image.size() / (width * height));
@@ -973,7 +976,7 @@ bool runTest(FILE* resultsFile, const char* imageName, std::vector<TestResult>& 
                 deltaPsnrY);
         std::cout << printBuffer << std::endl;
 
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
         fprintf(resultsFile, "%s;%s;%s;%3.0f;%3.0f;%3.5f;%s;%3.5f;%3.5f;%3.5f\n", imageName, r.encoderName.c_str(), r.format.c_str(), r.numberOfPixels, r.timeInMicroSeconds, mps, formatResultsRGB(r.msePsnr).c_str(), deltaPsnrMin, deltaPsnrRgb, deltaPsnrY);
 #endif
     }
@@ -1038,7 +1041,7 @@ const char* testImages[] = {
 #endif
 };
 
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
 int main()
 {
     FILE* resultsFile = fopen("./test-results/results.txt", "w");
@@ -1080,7 +1083,7 @@ TEST_CASE("main")
                  "(us);MP/s;mseR;mseG;mseB;mseMax;mseRGB;mseY;psnrR (db);psnrG (db);psnrB "
                  "(db);psnrMin (db);psnrRGB (db);psnrY (db);deltaMin (db);deltaRGB (db);deltaY (db)"
               << std::endl;
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     fprintf(resultsFile, "Image;Encoder;Format;NumberOfPixels;time (us);MP/s;mseR;mseG;mseB;mseMax;mseRGB;mseY;psnrR (db);psnrG (db);psnrB (db);psnrMin (db);psnrRGB (db);psnrY (db);deltaMin (db);deltaRGB (db);deltaY (db)\n");
     fprintf(summaryFile, "Codec;Format;Avg psnrMin (db);Avg psnrRGB (db); Avg psnrY (db); Number of tests; Avg time (msec)\n");
 #endif
@@ -1090,7 +1093,7 @@ TEST_CASE("main")
         if (!res)
         {
             std::cout << "Tetst " << i << " failed" << std::endl;
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
             return -1;
 #else
             REQUIRE(false);
@@ -1130,18 +1133,18 @@ TEST_CASE("main")
                 avg.second.numberOfImages,
                 timeAvg);
         std::cout << printBuffer;
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
         fprintf(summaryFile, "%s;%s;%.0f;%1.1f\n", avg.first.c_str(), tmp.c_str(), avg.second.numberOfImages, timeAvg);
 #endif
     }
     std::cout << "---------------------------" << std::endl;
 
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     fclose(summaryFile);
     fclose(resultsFile);
 #endif
     std::cout << "Finished. Check './test-results/results.txt' for details" << std::endl;
-#ifndef __EMSCRIPTEN__
+#if !(defined(__EMSCRIPTEN__) || defined(__ANDROID__))
     return 0;
 #endif
 }

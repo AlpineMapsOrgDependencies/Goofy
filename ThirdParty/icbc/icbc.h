@@ -22,10 +22,13 @@ namespace icbc {
 
 }
 
+#define ICBC_IMPLEMENTATION
 #ifdef ICBC_IMPLEMENTATION
 
+#ifndef __ANDROID__
 #ifndef ICBC_USE_SSE
 #define ICBC_USE_SSE 2
+#endif
 #endif
 
 #ifndef ICBC_DECODER
