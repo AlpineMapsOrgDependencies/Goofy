@@ -1,0 +1,166 @@
+name: "Android"
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "android"
+  cancel-in-progress: true
+  
+env:
+  ANDROID_ARCH: x86_64
+  ANDROID_TARGET: google_apis_playstore
+  API_LEVEL: 33
+  ANDROID_BUILD_TOOLS_VERSION: 33.0.2
+  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
+  EMULATOR_TIMEOUT: 350
+  EMULATOR_NAME: nexus
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: seanmiddleditch/gha-setup-ninja@master
+    
+    - name: Install Qt native version (required for cross compilation)
+      uses: jurplel/install-qt-action@v3
+      with:
+        aqtversion: '==3.1.*'
+        version: '6.6.1'
+        host: mac
+        target: 'desktop'
+        arch: clang_64
+        dir: '${{github.workspace}}/qt'
+        install-deps: 'true'
+
+    - name: Set QT_HOST_PATH
+      run: echo "QT_HOST_PATH=${Qt6_DIR}" >> "$GITHUB_ENV"
+
+    - name: Add avdmanager and sdkmanager to system PATH
+      run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
+
+    - name: Install Sdk
+      run: |
+         yes Y | sdkmanager --licenses
+         sdkmanager --install ${ANDROID_SDK_PACKAGES}
+  
+    - name: Build emulator
+      run: |
+          echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
+
+    - name: Launch emulator
+      run: |
+        wget https://raw.githubusercontent.com/amrsa1/android-emulator-workflow/main/start_emu_headless.sh
+        chmod +x ./start_emu_headless.sh
+        EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
+
+    - name: Install Qt Android version
+      uses: jurplel/install-qt-action@v3
+      with:
+        aqtversion: '==3.1.*'
+        version: '6.6.1'
+        host: mac
+        target: 'android'
+        arch: android_x86_64
+        dir: '${{github.workspace}}/qt'
+        install-deps: 'true'
+
+    - name: Make qt binaries executable
+      run: |
+        chmod u+x ${Qt6_DIR}/bin/*
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        echo "install-dir=${{ github.workspace }}/install" >> "$GITHUB_OUTPUT"
+
+    - name: Configure CMake for short tests
+      env:
+        CMAKE_PREFIX_PATH: ${{env.Qt6_DIR}}/lib/cmake
+      run: >
+        ${Qt6_DIR}/bin/qt-cmake
+        -G Ninja
+        -B ${{ steps.strings.outputs.build-output-dir }}_short
+        -DCMAKE_BUILD_TYPE=Debug
+        -DAA_ENABLE_LONG_TEST_RUN=OFF
+        -DFMT_INSTALL=OFF
+        -S ${{ github.workspace }}
+
+    - name: Build short tests
+      run: |
+        cmake --build ${{ steps.strings.outputs.build-output-dir }}_short
+        tree
+      
+    - name: Run on emulator
+      run: |
+        adb devices
+
+    - name: Configure CMake for long tests
+      env:
+        CMAKE_PREFIX_PATH: ${{env.Qt6_DIR}}/lib/cmake
+      run: >
+        ${Qt6_DIR}/bin/qt-cmake
+        -G Ninja
+        -B ${{ steps.strings.outputs.build-output-dir }}_long
+        -DCMAKE_BUILD_TYPE=Release
+        -DAA_ENABLE_LONG_TEST_RUN=ON
+        -DAA_WWW_INSTALL_DIR=${{ steps.strings.outputs.install-dir }}/long
+        -DFMT_INSTALL=OFF
+        -S ${{ github.workspace }}
+
+    - name: Build long tests
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}_long --target install
+
+    - name: Create artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: webassembly_tests
+        path: ${{ steps.strings.outputs.install-dir }}
+        if-no-files-found: error
+
+    - name: Create index.html
+      run: |
+        echo "<html>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "  <head>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "    <title>Goffy Tests</title>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "  </head>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "  <body>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "  <ul>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "    <li><a href="./short/GoofyTC.html">short tests (be patient)</li>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "    <li><a href="./long/GoofyTC.html">long tests (be super patient)</li>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "    </ul>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "  </body>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "</html>" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        echo "" >> ${{ steps.strings.outputs.install-dir }}/index.html
+
+    - name: Create Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ steps.strings.outputs.install-dir }}
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+    - name: Debug output
+      run: echo ${{ steps.deployment.outputs.page_url }}
