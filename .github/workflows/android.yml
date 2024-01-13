@@ -20,6 +20,8 @@ env:
   ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
   EMULATOR_TIMEOUT: 350
   EMULATOR_NAME: nexus
+  # from qt creator
+  ANDROID_NDK_PLATFORM: android-33
 
 jobs:
   build:
@@ -83,6 +85,8 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
         echo "install-dir=${{ github.workspace }}/install" >> "$GITHUB_OUTPUT"
+        env
+        ls -l $ANDROID_HOME/build-tools/
 
     - name: Configure CMake for short tests
       env:
