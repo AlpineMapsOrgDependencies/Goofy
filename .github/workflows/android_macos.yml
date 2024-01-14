@@ -54,24 +54,24 @@ jobs:
     - name: Set QT_HOST_PATH
       run: echo "QT_HOST_PATH=${Qt6_DIR}" >> "$GITHUB_ENV"
 
-    # - name: Add avdmanager and sdkmanager to system PATH
-    #   run: |
-    #       echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
+    - name: Add avdmanager and sdkmanager to system PATH
+      run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS_VERSION }}" >> $GITHUB_PATH
 
-    # - name: Install Sdk
-    #   run: |
-    #      yes Y | sdkmanager --licenses
-    #      sdkmanager --install ${ANDROID_SDK_PACKAGES}
+    - name: Install Sdk
+      run: |
+         yes Y | sdkmanager --licenses
+         sdkmanager --install ${ANDROID_SDK_PACKAGES}
   
-    # - name: Build emulator
-    #   run: |
-    #       echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
+    - name: Build emulator
+      run: |
+          echo "no" | avdmanager --verbose create avd --force -n $EMULATOR_NAME --abi "${ANDROID_TARGET}/${ANDROID_ARCH}" -k "system-images;android-${API_LEVEL};${ANDROID_TARGET};${ANDROID_ARCH}"
 
-    # - name: Launch emulator
-    #   run: |
-    #     wget https://raw.githubusercontent.com/amrsa1/android-emulator-workflow/main/start_emu_headless.sh
-    #     chmod +x ./start_emu_headless.sh
-    #     EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
+    - name: Launch emulator
+      run: |
+        wget https://raw.githubusercontent.com/amrsa1/android-emulator-workflow/main/start_emu_headless.sh
+        chmod +x ./start_emu_headless.sh
+        EMULATOR_TIMEOUT=$EMULATOR_TIMEOUT EMULATOR_NAME=$EMULATOR_NAME ./start_emu_headless.sh
 
     - name: Install Qt Android version
       uses: jurplel/install-qt-action@v3
@@ -112,7 +112,6 @@ jobs:
     - name: Build short tests
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-dir }}_short
-        tree
         
     - name: Debug output
       if: always()
@@ -122,13 +121,14 @@ jobs:
     - name: Run on emulator
       run: |
         adb devices
+        adb install build_short/Src/android-build/GoofyTC.apk
+        adb shell am start -n org.qtproject.example.GoofyTC/org.qtproject.qt.android.bindings.QtActivity
 
     - name: Configure CMake for long tests
       env:
         CMAKE_PREFIX_PATH: ${{env.Qt6_DIR}}/lib/cmake
       run: >
         ${Qt6_DIR}/bin/qt-cmake
-        -G Ninja
         -B ${{ steps.strings.outputs.build-output-dir }}_long
         -DCMAKE_BUILD_TYPE=Release
         -DAA_ENABLE_LONG_TEST_RUN=ON
@@ -137,7 +137,7 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build long tests
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}_long --target install
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }}_long
 
     - name: Create artifact
       uses: actions/upload-artifact@v4
