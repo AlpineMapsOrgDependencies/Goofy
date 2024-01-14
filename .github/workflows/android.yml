@@ -21,18 +21,17 @@ env:
   # EMULATOR_TIMEOUT: 350
   # EMULATOR_NAME: nexus
   # from qt creator
-  ANDROID_NDK_PLATFORM: android-33
+  ANDROID_NDK_PLATFORM: android-34
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Install dependencies
       run: |
-        brew install tree
+        sudo apt-get install -y build-essential ninja-build lld clang-15 libgl1-mesa-dev libxcb-cursor-dev xorg-dev libxrandr-dev libxcursor-dev libudev-dev libopenal-dev libflac-dev libvorbis-dev libgl1-mesa-dev libegl1-mesa-dev libdrm-dev libgbm-dev xvfb libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
     
     - name: Install Qt native version (required for cross compilation)
       uses: jurplel/install-qt-action@v3
