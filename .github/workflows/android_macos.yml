@@ -33,6 +33,12 @@ jobs:
     - name: Install dependencies
       run: |
         brew install tree
+        
+    - name: Setup JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
     
     - name: Install Qt native version (required for cross compilation)
       uses: jurplel/install-qt-action@v3
