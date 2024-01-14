@@ -12,7 +12,6 @@ on:
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "ci"
-  cancel-in-progress: false
 
 jobs:
   build:
