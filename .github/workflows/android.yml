@@ -43,6 +43,9 @@ jobs:
 
     - name: Set QT_HOST_PATH
       run: echo "QT_HOST_PATH=${Qt6_DIR}" >> "$GITHUB_ENV"
+      
+    - name: Delete incompatible sdk build tools
+      run: sudo rm -rf $ANDROID_HOME/build-tools/34.0.0
 
     - name: Add avdmanager and sdkmanager to system PATH
       run: |
