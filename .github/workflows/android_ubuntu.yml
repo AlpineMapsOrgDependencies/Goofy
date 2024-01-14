@@ -38,9 +38,9 @@ jobs:
       with:
         aqtversion: '==3.1.*'
         version: '6.6.1'
-        host: mac
+        host: linux
         target: 'desktop'
-        arch: clang_64
+        arch: gcc_64
         dir: '${{github.workspace}}/qt'
         install-deps: 'true'
 
@@ -71,7 +71,7 @@ jobs:
       with:
         aqtversion: '==3.1.*'
         version: '6.6.1'
-        host: mac
+        host: linux
         target: 'android'
         arch: android_x86_64
         dir: '${{github.workspace}}/qt'
