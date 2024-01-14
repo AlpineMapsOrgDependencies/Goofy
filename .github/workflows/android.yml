@@ -16,8 +16,8 @@ env:
   ANDROID_ARCH: x86_64
   ANDROID_TARGET: google_apis_playstore
   API_LEVEL: 33
-  ANDROID_BUILD_TOOLS_VERSION: 33.0.2
-  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;33.0.2 platform-tools emulator
+  ANDROID_BUILD_TOOLS_VERSION: 34.0.0
+  ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;34.0.0 platform-tools emulator
   EMULATOR_TIMEOUT: 350
   EMULATOR_NAME: nexus
   # from qt creator
@@ -43,9 +43,6 @@ jobs:
 
     - name: Set QT_HOST_PATH
       run: echo "QT_HOST_PATH=${Qt6_DIR}" >> "$GITHUB_ENV"
-      
-    - name: Delete incompatible sdk build tools
-      run: sudo rm -rf $ANDROID_HOME/build-tools/34.0.0
 
     - name: Add avdmanager and sdkmanager to system PATH
       run: |
