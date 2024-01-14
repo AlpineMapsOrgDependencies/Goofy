@@ -27,10 +27,6 @@ if(EMSCRIPTEN OR ANDROID)
         install(FILES ${INSTALL_FILES} DESTINATION ${AA_WWW_INSTALL_DIR})
         target_compile_options(${PROJECT_NAME} PUBLIC -msimd128 -msse2)
         set_target_properties(${PROJECT_NAME} PROPERTIES QT_WASM_INITIAL_MEMORY "200MB")
-    else()
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android
-        )
     endif()
 
     qt_add_resources(${PROJECT_NAME} "test-data"
