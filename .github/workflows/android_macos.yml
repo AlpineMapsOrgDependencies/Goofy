@@ -29,7 +29,6 @@ jobs:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Install dependencies
       run: |
@@ -98,12 +97,10 @@ jobs:
         CMAKE_PREFIX_PATH: ${{env.Qt6_DIR}}/lib/cmake
       run: >
         ${Qt6_DIR}/bin/qt-cmake
-        -G Ninja
         -B ${{ steps.strings.outputs.build-output-dir }}_short
         -DCMAKE_BUILD_TYPE=Debug
         -DAA_ENABLE_LONG_TEST_RUN=OFF
         -DFMT_INSTALL=OFF
-        -DQT_ANDROID_SDK_BUILD_TOOLS_REVISION="${ANDROID_SDK_BUILD_TOOLS_REVISION}"
         -S ${{ github.workspace }}
 
     - name: Build short tests
