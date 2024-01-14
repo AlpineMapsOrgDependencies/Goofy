@@ -110,6 +110,11 @@ jobs:
       run: |
         cmake --build ${{ steps.strings.outputs.build-output-dir }}_short
         tree
+        
+    - name: Debug output
+      if: always()
+      run: |
+        cat /Users/runner/work/Goofy/Goofy/build_short/Src/android-GoofyTC-deployment-settings.json
       
     - name: Run on emulator
       run: |
