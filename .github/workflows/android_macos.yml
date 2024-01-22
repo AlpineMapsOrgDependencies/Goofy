@@ -18,7 +18,7 @@ env:
   API_LEVEL: 33
   ANDROID_BUILD_TOOLS_VERSION: 34.0.0
   ANDROID_SDK_PACKAGES: system-images;android-33;google_apis_playstore;x86_64 platforms;android-33 build-tools;34.0.0 platform-tools emulator
-  EMULATOR_TIMEOUT: 350
+  EMULATOR_TIMEOUT: 650
   EMULATOR_NAME: nexus
 
 jobs:
@@ -114,12 +114,16 @@ jobs:
       if: always()
       run: |
         cat /Users/runner/work/Goofy/Goofy/build_short/Src/android-GoofyTC-deployment-settings.json
+        tree build_short
       
     - name: Run on emulator
       run: |
         adb devices
         adb install build_short/Src/android-build/GoofyTC.apk
         adb shell am start -n org.qtproject.example.GoofyTC/org.qtproject.qt.android.bindings.QtActivity
+        while [ "$(adb shell dumpsys window windows | grep -i "GoofyTC" | wc -l | tr -d '[:space:]')" -ne 0 ]; do sleep 2; done && echo "Execution finished."
+        adb logcat -d -s GoofyTC
+        adb logcat -d -s GoofyTC | grep -q "Catch::Session finished with exit code 0" || exit 1
 
     - name: Configure CMake for long tests
       env:
@@ -135,47 +139,13 @@ jobs:
 
     - name: Build long tests
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }}_long
-
-    - name: Create artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: webassembly_tests
-        path: ${{ steps.strings.outputs.install-dir }}
-        if-no-files-found: error
-
-    - name: Create index.html
+      
+    - name: Run on emulator
       run: |
-        echo "<html>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "  <head>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "    <title>Goffy Tests</title>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "  </head>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "  <body>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "  <ul>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "    <li><a href="./short/GoofyTC.html">short tests (be patient)</li>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "    <li><a href="./long/GoofyTC.html">long tests (be super patient)</li>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "    </ul>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "  </body>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "</html>" >> ${{ steps.strings.outputs.install-dir }}/index.html
-        echo "" >> ${{ steps.strings.outputs.install-dir }}/index.html
+        adb devices
+        adb install -r build_long/Src/android-build/GoofyTC.apk
+        adb shell am start -n org.qtproject.example.GoofyTC/org.qtproject.qt.android.bindings.QtActivity
+        while [ "$(adb shell dumpsys window windows | grep -i "GoofyTC" | wc -l | tr -d '[:space:]')" -ne 0 ]; do sleep 2; done && echo "Execution finished."
+        adb logcat -d -s GoofyTC
+        adb logcat -d -s GoofyTC | grep -q "Catch::Session finished with exit code 0" || exit 1
 
-    - name: Create Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: ${{ steps.strings.outputs.install-dir }}
-
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: Setup Pages
-      uses: actions/configure-pages@v4
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
-    - name: Debug output
-      run: echo ${{ steps.deployment.outputs.page_url }}
